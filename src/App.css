@@ -14,13 +14,13 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #242455;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(5px + 2vmin);
+  font-size: calc(10px + 2vmin);
   color: white;
 }
 
@@ -35,4 +35,19 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.Btn {
+  font-size: calc(2vmin);
+  border: none;
+  color: white;
+  background-color: Transparent;
+  margin: 5px;
+  padding: 5px;
+}
+.Btn:hover{
+  background: #045070;
+}
+.Btn:focus{
+  outline:0;
 }

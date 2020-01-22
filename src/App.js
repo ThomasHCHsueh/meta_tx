@@ -3,7 +3,7 @@ import logo from './ethereum.svg';
 import './App.css';
 import getWeb3 from "./getWeb3";
 
-const dapp_contract = "0x18cb727dC5D45C9d437917A10BF8B6cA220C19C9";
+const dapp_contract = "0xBcb03A38f792Dc0aEe014fa2F6291a1a8aF2bf18";
 const dapp_salt = "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558";
 const domainTypes = [
   { name: "name", type: "string" },
@@ -38,6 +38,29 @@ class App extends Component {
         accounts: accounts
       })
 
+      const m = web3.eth.abi.encodeFunctionSignature('smile(address,uint256)');
+      const p = web3.eth.abi.encodeParameters(['address', 'uint256'], [accounts[0], 8932]);
+      const mp = web3.eth.abi.encodeParameters(['bytes4', 'bytes'], [m, p]);
+      console.log("m: ", m)
+      console.log("p: ", p)
+      console.log("mp: ", mp)
+      const mp_decoded = web3.eth.abi.decodeParameters(['bytes4', 'bytes'], mp)
+      console.log("m == m_decoded?", m===mp_decoded[0]);
+      console.log("p == p_decoded?", p===mp_decoded[1]);
+      console.log(web3.eth.abi.decodeParameters(['address','uint256'], p))
+
+      console.log("hash of bytes 0x4587092 by web3 is: ",
+                  web3.utils.keccak256( web3.eth.abi.encodeParameters(['bytes'], ["0x4587092"]) ));
+
+      console.log("hash of bytes 0x4587092 by web3 is: ",
+                  web3.utils.keccak256( web3.eth.abi.encodeParameters(['bytes'], ["0x04587092"]) ));
+
+      console.log("hash of bytes 0x4587092 by web3 is: ",
+                  web3.utils.keccak256("0x4587092") );
+
+      console.log("hash of bytes 0x4587092 by web3 is: ",
+                  web3.utils.keccak256("0x04587092") );
+
     } catch (error) {
      // Catch any errors for any of the above operations.
      alert(
@@ -47,69 +70,7 @@ class App extends Component {
    }
   };
 
-  onclick() {
-
-    const web3 = this.state.web3;
-    const accounts = this.state.accounts;
-
-    //const chainId = parseInt(web3.networkVersion, 10);
-    const chainId = parseInt(web3.givenProvider.networkVersion);
-    console.log(chainId, typeof chainId);
-
-    const domainData = {
-      name: "EIP712Dapp",
-      version: "1",
-      chainId: chainId,
-      verifyingContract: dapp_contract, // dapp's address
-      salt: dapp_salt // dapp's salt value
-    };
-
-    const methodTypes = [
-      { name: "num", type: "uint256" },
-    ];
-
-    var message = {
-      num: 77,
-    };
-
-    const data = JSON.stringify({
-      types: {
-        EIP712Domain: domainTypes,
-        Smile: methodTypes,
-      },
-      domain: domainData,
-      primaryType: "Smile", // Must haves
-      message: message
-    });
-
-    const signer = web3.utils.toChecksumAddress(accounts[0]);
-
-    console.log("data: ", data)
-    console.log("signer: ", signer)
-    console.log("web3.currentProvider: ", web3.currentProvider);
-
-    web3.currentProvider.sendAsync(
-      {
-        method: "eth_signTypedData_v3",
-        params: [signer, data],
-        from: signer
-      },
-      function(err, result) {
-        if (err || result.error) {
-          return console.error(result);
-        }
-
-        console.log("result: ", result);
-
-        const signature = parseSignature(result.result.substring(2));
-        console.log(signature);
-
-      }
-    ); // closing sendAsync
-
-  } // closing onclick()
-
-  onclick2() {
+  onClickSmile() {
 
     const web3 = this.state.web3;
     const accounts = this.state.accounts;
@@ -127,15 +88,22 @@ class App extends Component {
     };
 
     var methodTypes = [
-      { name: "method", type: "bytes4" },
-      { name: "params", type: "bytes" }
+      { name: "method_name", type: "string"},
+      { name: "smiler", type: "address"},
+      { name: "smile_num", type: "uint256" },
+      { name: "method_identifier", type: "bytes4" },
+      { name: "params_packed", type: "bytes" }
     ];
     var message = {
-      method: web3.eth.abi.encodeFunctionSignature('smile(address,uint256)'),
-      params: web3.eth.abi.encodeParameters(['address', 'uint256'], [accounts[0], 8932])
+      method_name: 'smile(address,uint256)',
+      smiler:      accounts[0],
+      smile_num:   17111,
+      method_identifier: web3.eth.abi.encodeFunctionSignature('smile(address,uint256)'),
+      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256'], [accounts[0], 17111])
     };
-    console.log("message.method: ", message.method);
-    console.log("message.params: ", message.params);
+    console.log("message: ", message);
+    console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
+    console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
 
     const data = JSON.stringify({
       types: {
@@ -155,7 +123,7 @@ class App extends Component {
 
     web3.currentProvider.sendAsync(
       {
-        method: "eth_signTypedData_v3",
+        method: "eth_signTypedData_v4",
         params: [signer, data],
         from: signer
       },
@@ -171,7 +139,80 @@ class App extends Component {
       }
     ); // closing sendAsync
 
-  } // closing onclick2()
+  } // closing onClickSmile()
+
+  onClickNod() {
+
+    const web3 = this.state.web3;
+    const accounts = this.state.accounts;
+
+    //const chainId = parseInt(web3.networkVersion, 10);
+    const chainId = parseInt(web3.givenProvider.networkVersion);
+    console.log(chainId, typeof chainId);
+
+    const domainData = {
+      name: "EIP712Dapp",
+      version: "1",
+      chainId: chainId,
+      verifyingContract: dapp_contract, // dapp's address
+      salt: dapp_salt
+    };
+
+    var methodTypes = [
+      { name: "method_name", type: "string"},
+      { name: "nodder", type: "address"},
+      { name: "nod_num", type: "uint256" },
+      { name: "nod_mult", type: "uint256" },
+      { name: "method_identifier", type: "bytes4" },
+      { name: "params_packed", type: "bytes" }
+    ];
+    var message = {
+      method_name: 'nod(address,uint256,uint256)',
+      nodder:      accounts[0],
+      nod_num:   519,
+      nod_mult:  4,
+      method_identifier: web3.eth.abi.encodeFunctionSignature('nod(address,uint256,uint256)'),
+      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256', 'uint256'], [accounts[0], 519, 4])
+    };
+    console.log("message: ", message);
+    console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
+    console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
+
+    const data = JSON.stringify({
+      types: {
+        EIP712Domain: domainTypes,
+        Packet: methodTypes,
+      },
+      domain: domainData,
+      primaryType: "Packet", // Must haves
+      message: message
+    });
+
+    const signer = web3.utils.toChecksumAddress(accounts[0]);
+
+    console.log("data: ", data)
+    console.log("signer: ", signer)
+    console.log("web3.currentProvider: ", web3.currentProvider);
+
+    web3.currentProvider.sendAsync(
+      {
+        method: "eth_signTypedData_v4",
+        params: [signer, data],
+        from: signer
+      },
+      function(err, result) {
+        if (err || result.error) {
+          return console.error(result);
+        }
+
+        console.log("result: ", result);
+
+        const signature = parseSignature(result.result.substring(2));
+        console.log(signature);
+      }
+    ); // closing sendAsync
+
+  } // closing onClickNod()
 
   render(){
     return(
@@ -182,11 +223,11 @@ class App extends Component {
           <p>
             A general solution for enabling metatransaction.
           </p>
-          <button onClick={() => this.onclick()}>
-            Click to sign a metatrasanction for <b>Smile(uint256 num)</b>
+          <button className="Btn" onClick={() => this.onClickSmile()}>
+            Click to sign a metatrasanction for the dapp's <b>smile(address smiler, uint256 smileNum)</b>
           </button>
-          <button onClick={() => this.onclick2()}>
-            Click to sign a metatrasanction for <b>Packet(bytes4 method,bytes params)</b>
+          <button className="Btn" onClick={() => this.onClickNod()}>
+            Click to sign a metatrasanction for the dapp's <b>nod(address nodder, uint nodNum, uint nodMultiplier)</b>
           </button>
         </header>
       </div>
