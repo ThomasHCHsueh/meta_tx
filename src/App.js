@@ -34,6 +34,9 @@ class App extends Component {
 
   componentDidMount = async () => {
     try {
+      // Get authorization of user
+      await window.ethereum.enable();
+
       // Get network provider and web3 instance.
       const web3 = await getWeb3();
       console.log("web3: ", web3);
@@ -71,11 +74,11 @@ class App extends Component {
                   web3.utils.keccak256("0x04587092") );
 
     } catch (error) {
-     // Catch any errors for any of the above operations.
-     alert(
-       `Failed to load Metamask. Check console for details.`,
-     );
-     console.error(error);
+      // Catch any errors for any of the above operations.
+      alert(
+        `Failed to load Metamask. Check console for details.`,
+      );
+      console.error(error);
    }
   };
 
