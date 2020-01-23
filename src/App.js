@@ -72,7 +72,7 @@ class App extends Component {
       // Catch any errors for any of the above operations.
       alert('Failed to load Metamask. Check console for details.');
       console.error(error);
-   }
+    }
   };
 
   updateNonce() {
@@ -148,7 +148,7 @@ class App extends Component {
           nonce
         )
         .then((res) => {
-          res.json().then((res) => { alert(`Metx tx is sent!\nTx hash: ${res.hash}`); console.log(res.hash); });
+          res.json().then((res) => { alert(`Metx tx is sent!\nTx hash: ${res.hash}`); });
         })
         .catch((err) => {
           err.json().then((res) => { alert(`Error: ${res.hash}`); });
@@ -157,7 +157,7 @@ class App extends Component {
     ); // closing sendAsync
 
     // Add nonce
-    this.setState({ nonce: nonce + 1 });
+    this.updateNonce();
   } // closing onClickSmile()
 
   onClickNod() {
@@ -246,7 +246,7 @@ class App extends Component {
     ); // closing sendAsync
 
     // Add nonce
-    this.setState({ nonce: nonce + 1 });
+    this.updateNonce();
   } // closing onClickNod()
 
   render(){
