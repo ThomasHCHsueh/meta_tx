@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import logo from './ethereum.svg';
 import './App.css';
 import getWeb3 from "./getWeb3";
+import { relayerMetaTx } from './relayer';
 
 const dapp_contract = "0x07637624e1de92a886C2f37A219C1749784D5367";
 const dapp_salt = "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558";
@@ -27,8 +28,7 @@ class App extends Component {
     super(props);
     this.state = {
       web3: null,
-      accounts: null,
-      txResult: '',
+      accounts: null
     };
   }
 
@@ -170,9 +170,9 @@ class App extends Component {
       method_identifier: web3.eth.abi.encodeFunctionSignature('nod(address,uint256,uint256)'),
       params_packed: web3.eth.abi.encodeParameters(['address', 'uint256', 'uint256'], [account, num, mult])
     };
-    console.log("message: ", message);
-    console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
-    console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
+    // console.log("message: ", message);
+    // console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
+    // console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
 
     // Set Data
     const data = JSON.stringify({
@@ -202,21 +202,32 @@ class App extends Component {
         if (err || result.error) {
           return console.error(result);
         }
-
         console.log("result: ", result);
 
         const signature = parseSignature(result.result.substring(2));
         console.log(signature);
+        
+        // Post to Relayer
+        relayerMetaTx(
+          dapp_contract,
+          account,
+          message.method_identifier,
+          message.params_packed,
+          signature.r,
+          signature.s,
+          signature.v
+        )
+        .then((res) => {
+          res.json().then((res) => { alert(`Metx tx is sent!\nTx hash: ${res.hash}`); });
+        })
+        .catch((err) => {
+          err.json().then((res) => { alert(`Error: ${res.hash}`); });
+        });
       }
     ); // closing sendAsync
-
-    // Post to Relayer
-
   } // closing onClickNod()
 
   render(){
-    const {txResult} = this.state;
-
     return(
       <div className="App">
         <header className="App-header">
@@ -231,10 +242,7 @@ class App extends Component {
             </button>
           </div>
           <p style={{ fontSize: 14, marginTop: 10 }}>
-            <text>Target Contract: {dapp_contract}</text>
-          </p>
-          <p style={{ fontSize: 14, marginTop: 10 }}>
-            <text>{txResult}</text>
+            <span>Target Contract: {dapp_contract}</span>
           </p>
         </header>
       </div>
