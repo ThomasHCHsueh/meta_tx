@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import logo from './ethereum.svg';
-import './App.css';
+import './css/App.css';
 import getWeb3 from "./getWeb3";
 import { relayerMetaTx } from './relayer';
 
