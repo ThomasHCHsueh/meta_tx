@@ -10,7 +10,7 @@ const RELAYER_URL = 'https://us-central1-dapp-pocket.cloudfunctions.net/relayer/
  * @param {number} v 
  * @returns {promise}
  */
-const relayerMetaTx = (contractAddress, signer, method, param, r, s, v) => {
+const relayerMetaTx = (contractAddress, signer, method, param, r, s, v, nonce) => {
     const data = {
         contractAddress,
         signer,
@@ -19,6 +19,7 @@ const relayerMetaTx = (contractAddress, signer, method, param, r, s, v) => {
         r,
         s,
         v,
+        nonce,
     };
 
     return fetch(RELAYER_URL, {

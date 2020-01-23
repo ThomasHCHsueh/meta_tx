@@ -1,10 +1,15 @@
 import React, { Component } from 'react'
+import { ethers } from 'ethers';
 import logo from './static/ethereum.svg';
 import './css/App.css';
 import getWeb3 from "./getWeb3";
 import { relayerMetaTx } from './relayer';
 
-const dapp_contract = "0x07637624e1de92a886C2f37A219C1749784D5367";
+const dapp_contract = "0xBFe35224E6101812Fcd0227c4b3019FB2B10A643";
+const CONTRACT_ABI = [ { "constant": false, "inputs": [ { "internalType": "address", "name": "nodder", "type": "address" }, { "internalType": "uint256", "name": "nodNum", "type": "uint256" }, { "internalType": "uint256", "name": "nodMultiplier", "type": "uint256" } ], "name": "nod", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "internalType": "address", "name": "smiler", "type": "address" }, { "internalType": "uint256", "name": "smileNum", "type": "uint256" } ], "name": "smile", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "internalType": "address", "name": "signer", "type": "address" }, { "internalType": "bytes4", "name": "method", "type": "bytes4" }, { "internalType": "bytes", "name": "params", "type": "bytes" }, { "internalType": "bytes32", "name": "r", "type": "bytes32" }, { "internalType": "bytes32", "name": "s", "type": "bytes32" }, { "internalType": "uint8", "name": "v", "type": "uint8" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" } ], "name": "verifyMeta", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "NOD_METHOD_SIG_HASHED", "outputs": [ { "internalType": "bytes32", "name": "", "type": "bytes32" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "internalType": "address", "name": "", "type": "address" } ], "name": "nods", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "internalType": "address", "name": "", "type": "address" } ], "name": "nonces", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "internalType": "address", "name": "", "type": "address" } ], "name": "smiles", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" } ];
+const defaultProvider = ethers.getDefaultProvider('ropsten');
+const contract = new ethers.Contract(dapp_contract, CONTRACT_ABI, defaultProvider);
+
 const dapp_salt = "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558";
 const domainTypes = [
   { name: "name", type: "string" },
@@ -19,14 +24,16 @@ const methodTypes = [
   { name: "nod_num", type: "uint256" },
   { name: "nod_mult", type: "uint256" },
   { name: "method_identifier", type: "bytes4" },
-  { name: "params_packed", type: "bytes" }
+  { name: "params_packed", type: "bytes" },
+  { name: "nonce", type: "uint256" }
 ];
 const methodTypesSmile = [
   { name: "method_name", type: "string"},
   { name: "smiler", type: "address"},
   { name: "smile_num", type: "uint256" },
   { name: "method_identifier", type: "bytes4" },
-  { name: "params_packed", type: "bytes" }
+  { name: "params_packed", type: "bytes" },
+  { name: "nonce", type: "uint256" }
 ];
 
 class App extends Component {
@@ -36,7 +43,8 @@ class App extends Component {
     this.state = {
       web3: null,
       accounts: null,
-      smileNum: 10
+      smileNum: 10,
+      nonce: 0
     };
   }
 
@@ -58,29 +66,8 @@ class App extends Component {
         accounts: accounts
       })
 
-      const m = web3.eth.abi.encodeFunctionSignature('smile(address,uint256)');
-      const p = web3.eth.abi.encodeParameters(['address', 'uint256'], [accounts[0], 8932]);
-      const mp = web3.eth.abi.encodeParameters(['bytes4', 'bytes'], [m, p]);
-      console.log("m: ", m)
-      console.log("p: ", p)
-      console.log("mp: ", mp)
-      const mp_decoded = web3.eth.abi.decodeParameters(['bytes4', 'bytes'], mp)
-      console.log("m == m_decoded?", m===mp_decoded[0]);
-      console.log("p == p_decoded?", p===mp_decoded[1]);
-      console.log(web3.eth.abi.decodeParameters(['address','uint256'], p))
-
-      console.log("hash of bytes 0x4587092 by web3 is: ",
-                  web3.utils.keccak256( web3.eth.abi.encodeParameters(['bytes'], ["0x4587092"]) ));
-
-      console.log("hash of bytes 0x4587092 by web3 is: ",
-                  web3.utils.keccak256( web3.eth.abi.encodeParameters(['bytes'], ["0x04587092"]) ));
-
-      console.log("hash of bytes 0x4587092 by web3 is: ",
-                  web3.utils.keccak256("0x4587092") );
-
-      console.log("hash of bytes 0x4587092 by web3 is: ",
-                  web3.utils.keccak256("0x04587092") );
-
+      // Get nonce
+      this.updateNonce();
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert('Failed to load Metamask. Check console for details.');
@@ -88,8 +75,18 @@ class App extends Component {
    }
   };
 
+  updateNonce() {
+    const { accounts } = this.state;
+    const account = accounts[0];
+    contract.nonces(account).then((res) => {
+      const nonce = res.toNumber();
+      this.setState({ nonce });
+      console.log('Update nonce: ', nonce);
+    });
+  }
+
   onClickSmile() {
-    const { web3, accounts, smileNum } = this.state;
+    const { web3, accounts, smileNum, nonce } = this.state;
 
     const account = accounts[0];
     const chainId = parseInt(web3.givenProvider.networkVersion);
@@ -105,7 +102,8 @@ class App extends Component {
       smiler: account,
       smile_num: smileNum,
       method_identifier: web3.eth.abi.encodeFunctionSignature('smile(address,uint256)'),
-      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256'], [account, smileNum])
+      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256'], [account, smileNum]),
+      nonce: nonce,
     };
     const data = JSON.stringify({
       types: {
@@ -146,7 +144,8 @@ class App extends Component {
           message.params_packed,
           signature.r,
           signature.s,
-          signature.v
+          signature.v,
+          nonce
         )
         .then((res) => {
           res.json().then((res) => { alert(`Metx tx is sent!\nTx hash: ${res.hash}`); console.log(res.hash); });
@@ -156,14 +155,17 @@ class App extends Component {
         });
       }
     ); // closing sendAsync
+
+    // Add nonce
+    this.setState({ nonce: nonce + 1 });
   } // closing onClickSmile()
 
   onClickNod() {
-    const web3 = this.state.web3;
-    const accounts = this.state.accounts;
+    const { web3, accounts, nonce } = this.state;
+
     const chainId = parseInt(web3.givenProvider.networkVersion);
     const account = accounts[0];
-    const num = 519;
+    const num = 100;
     const mult = 4;
     console.log(chainId, typeof chainId);
 
@@ -183,11 +185,12 @@ class App extends Component {
       nod_num: num,
       nod_mult: mult,
       method_identifier: web3.eth.abi.encodeFunctionSignature('nod(address,uint256,uint256)'),
-      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256', 'uint256'], [account, num, mult])
+      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256', 'uint256'], [account, num, mult]),
+      nonce: nonce,
     };
-    // console.log("message: ", message);
-    // console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
-    // console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
+    console.log("message: ", message);
+    console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
+    console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
 
     // Set Data
     const data = JSON.stringify({
@@ -230,7 +233,8 @@ class App extends Component {
           message.params_packed,
           signature.r,
           signature.s,
-          signature.v
+          signature.v,
+          nonce
         )
         .then((res) => {
           res.json().then((res) => { alert(`Metx tx is sent!\nTx hash: ${res.hash}`); });
@@ -240,6 +244,9 @@ class App extends Component {
         });
       }
     ); // closing sendAsync
+
+    // Add nonce
+    this.setState({ nonce: nonce + 1 });
   } // closing onClickNod()
 
   render(){
