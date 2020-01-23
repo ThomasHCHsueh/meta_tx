@@ -3,7 +3,7 @@ import logo from './ethereum.svg';
 import './App.css';
 import getWeb3 from "./getWeb3";
 
-const dapp_contract = "0xeA29E6459Bf3809a62f8Db65E666eeA030e6778d";
+const dapp_contract = "0x07637624e1de92a886C2f37A219C1749784D5367";
 const dapp_salt = "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558";
 const domainTypes = [
   { name: "name", type: "string" },
@@ -27,7 +27,8 @@ class App extends Component {
     super(props);
     this.state = {
       web3: null,
-      accounts: null
+      accounts: null,
+      txResult: '',
     };
   }
 
@@ -208,23 +209,33 @@ class App extends Component {
         console.log(signature);
       }
     ); // closing sendAsync
+
+    // Post to Relayer
+
   } // closing onClickNod()
 
   render(){
+    const {txResult} = this.state;
+
     return(
       <div className="App">
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
-          <br></br>
-          <p>
-            A general solution for enabling metatransaction.
+          <h3>A general solution for enabling metatransaction.</h3>
+          <div>
+            <button className="Btn" onClick={() => this.onClickSmile()}>
+              Click to sign a metatrasanction for the dapp's <b>smile(address smiler, uint256 smileNum)</b>
+            </button>
+            <button className="Btn" onClick={() => this.onClickNod()}>
+              Click to sign a metatrasanction for the dapp's <b>nod(address nodder, uint nodNum, uint nodMultiplier)</b>
+            </button>
+          </div>
+          <p style={{ fontSize: 14, marginTop: 10 }}>
+            <text>Target Contract: {dapp_contract}</text>
           </p>
-          <button className="Btn" onClick={() => this.onClickSmile()}>
-            Click to sign a metatrasanction for the dapp's <b>smile(address smiler, uint256 smileNum)</b>
-          </button>
-          <button className="Btn" onClick={() => this.onClickNod()}>
-            Click to sign a metatrasanction for the dapp's <b>nod(address nodder, uint nodNum, uint nodMultiplier)</b>
-          </button>
+          <p style={{ fontSize: 14, marginTop: 10 }}>
+            <text>{txResult}</text>
+          </p>
         </header>
       </div>
     );
