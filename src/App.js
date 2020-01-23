@@ -21,6 +21,13 @@ const methodTypes = [
   { name: "method_identifier", type: "bytes4" },
   { name: "params_packed", type: "bytes" }
 ];
+const methodTypesSmile = [
+  { name: "method_name", type: "string"},
+  { name: "smiler", type: "address"},
+  { name: "smile_num", type: "uint256" },
+  { name: "method_identifier", type: "bytes4" },
+  { name: "params_packed", type: "bytes" }
+];
 
 class App extends Component {
 
@@ -28,7 +35,8 @@ class App extends Component {
     super(props);
     this.state = {
       web3: null,
-      accounts: null
+      accounts: null,
+      smileNum: 10
     };
   }
 
@@ -75,22 +83,16 @@ class App extends Component {
 
     } catch (error) {
       // Catch any errors for any of the above operations.
-      alert(
-        `Failed to load Metamask. Check console for details.`,
-      );
+      alert('Failed to load Metamask. Check console for details.');
       console.error(error);
    }
   };
 
   onClickSmile() {
+    const { web3, accounts, smileNum } = this.state;
 
-    const web3 = this.state.web3;
-    const accounts = this.state.accounts;
-
-    //const chainId = parseInt(web3.networkVersion, 10);
+    const account = accounts[0];
     const chainId = parseInt(web3.givenProvider.networkVersion);
-    console.log(chainId, typeof chainId);
-
     const domainData = {
       name: "EIP712Dapp",
       version: "1",
@@ -98,33 +100,29 @@ class App extends Component {
       verifyingContract: dapp_contract, // dapp's address
       salt: dapp_salt
     };
-
-    var message = {
+    const message = {
       method_name: 'smile(address,uint256)',
-      smiler:      accounts[0],
-      smile_num:   17111,
+      smiler: account,
+      smile_num: smileNum,
       method_identifier: web3.eth.abi.encodeFunctionSignature('smile(address,uint256)'),
-      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256'], [accounts[0], 17111])
+      params_packed: web3.eth.abi.encodeParameters(['address', 'uint256'], [account, smileNum])
     };
-    console.log("message: ", message);
-    console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
-    console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
-
     const data = JSON.stringify({
       types: {
         EIP712Domain: domainTypes,
-        Packet: methodTypes,
+        Packet: methodTypesSmile,
       },
       domain: domainData,
       primaryType: "Packet", // Must haves
       message: message
     });
+    const signer = web3.utils.toChecksumAddress(account);
 
-    const signer = web3.utils.toChecksumAddress(accounts[0]);
-
+    console.log("message: ", message);
+    console.log("message.method_name hashed: ", web3.utils.keccak256(message.method_name));
+    console.log("message.params_packed hashed: ", web3.utils.keccak256(message.params_packed));
     console.log("data: ", data)
     console.log("signer: ", signer)
-    console.log("web3.currentProvider: ", web3.currentProvider);
 
     web3.currentProvider.sendAsync(
       {
@@ -137,13 +135,27 @@ class App extends Component {
           return console.error(result);
         }
 
-        console.log("result: ", result);
-
         const signature = parseSignature(result.result.substring(2));
         console.log(signature);
+
+        // Post to Relayer
+        relayerMetaTx(
+          dapp_contract,
+          account,
+          message.method_identifier,
+          message.params_packed,
+          signature.r,
+          signature.s,
+          signature.v
+        )
+        .then((res) => {
+          res.json().then((res) => { alert(`Metx tx is sent!\nTx hash: ${res.hash}`); console.log(res.hash); });
+        })
+        .catch((err) => {
+          err.json().then((res) => { alert(`Error: ${res.hash}`); });
+        });
       }
     ); // closing sendAsync
-
   } // closing onClickSmile()
 
   onClickNod() {
