@@ -5,6 +5,9 @@ https://gracious-ramanujan-2e52c3.netlify.com/
 
 Sign metatransaction however many times you like as long as the relayer's balance is not depleted! Hit refresh after ~1min to see the stored variables in the contract changing their values.
 
+## Let me read the contract first
+https://github.com/ThomasHCHsueh/meta_tx/blob/master/contract/dapp.sol
+
 ## Recap of status quo
 The dapp ecosystem could benefit significantly from having a standardized, secure and low-cost way of enabling MetaTransaction where a willing third-party hold ETH and help pay for the gas incurred from dapp user's interactions with dapps, particularly for the curious and newly onboarded users that do not hold ETH and are detered by the time-consuming process of fiat on-ramp.
 
