@@ -51,3 +51,15 @@
 .Btn:focus{
   outline:0;
 }
+
+.displayValues{
+  font-size: calc(2vmin);
+}
+
+.appendix{
+  font-size: calc(2vmin);
+  color: #999999;
+}
+.appendix:focus{
+  color: white;
+}

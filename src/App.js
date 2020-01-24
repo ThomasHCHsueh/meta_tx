@@ -6,6 +6,7 @@ import getWeb3 from "./getWeb3";
 import { relayerMetaTx } from './relayer';
 
 const dapp_contract = "0xBFe35224E6101812Fcd0227c4b3019FB2B10A643";
+const relayer_address = "0xC5fdf4076b8F3A5357c5E395ab970B5B54098Fef";
 const CONTRACT_ABI = [ { "constant": false, "inputs": [ { "internalType": "address", "name": "nodder", "type": "address" }, { "internalType": "uint256", "name": "nodNum", "type": "uint256" }, { "internalType": "uint256", "name": "nodMultiplier", "type": "uint256" } ], "name": "nod", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "internalType": "address", "name": "smiler", "type": "address" }, { "internalType": "uint256", "name": "smileNum", "type": "uint256" } ], "name": "smile", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "internalType": "address", "name": "signer", "type": "address" }, { "internalType": "bytes4", "name": "method", "type": "bytes4" }, { "internalType": "bytes", "name": "params", "type": "bytes" }, { "internalType": "bytes32", "name": "r", "type": "bytes32" }, { "internalType": "bytes32", "name": "s", "type": "bytes32" }, { "internalType": "uint8", "name": "v", "type": "uint8" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" } ], "name": "verifyMeta", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "NOD_METHOD_SIG_HASHED", "outputs": [ { "internalType": "bytes32", "name": "", "type": "bytes32" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "internalType": "address", "name": "", "type": "address" } ], "name": "nods", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "internalType": "address", "name": "", "type": "address" } ], "name": "nonces", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "internalType": "address", "name": "", "type": "address" } ], "name": "smiles", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" } ];
 const defaultProvider = ethers.getDefaultProvider('ropsten');
 const contract = new ethers.Contract(dapp_contract, CONTRACT_ABI, defaultProvider);
@@ -44,7 +45,10 @@ class App extends Component {
       web3: null,
       accounts: null,
       smileNum: 10,
-      nonce: 0
+      nonce: 0,
+      smiles: null,
+      nods: null,
+      relayer_balance: null
     };
   }
 
@@ -68,6 +72,28 @@ class App extends Component {
 
       // Get nonce
       this.updateNonce();
+
+      const account = accounts[0];
+
+      contract.smiles(account).then((res) => {
+        const smiles = res.toNumber();
+        this.setState({ smiles });
+        console.log('Update smiles: ', smiles);
+      });
+
+      contract.nods(account).then((res) => {
+        const nods = res.toNumber();
+        this.setState({ nods });
+        console.log('Update nods: ', nods);
+      });
+
+      //const testnet = 'https://ropsten.infura.io/';
+
+      //const web3 = new Web3(new Web3.providers.HttpProvider(testnet));
+      var relayer_balance = await web3.eth.getBalance(relayer_address);
+      relayer_balance = web3.utils.fromWei(relayer_balance);
+      this.setState({ relayer_balance });
+
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert('Failed to load Metamask. Check console for details.');
@@ -224,7 +250,7 @@ class App extends Component {
 
         const signature = parseSignature(result.result.substring(2));
         console.log(signature);
-        
+
         // Post to Relayer
         relayerMetaTx(
           dapp_contract,
@@ -250,22 +276,38 @@ class App extends Component {
   } // closing onClickNod()
 
   render(){
+
+    const smiles = this.state.smiles;
+    const nods = this.state.nods;
+    const relayer_balance = this.state.relayer_balance;
+
     return(
       <div className="App">
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
-          <h3>A general solution for enabling metatransaction.</h3>
+          <h4>A general solution for enabling metatransaction / demo on Ropsten testnet</h4>
           <div>
             <button className="Btn" onClick={() => this.onClickSmile()}>
-              Click to sign a metatrasanction for the dapp's <b>smile(address smiler, uint256 smileNum)</b>
+              🖐🏽 Sign a metatrasanction for <b>smile(your address, 10)</b>
+              <br/>(smiles[your address] = smiles[your address] + 10)<br/>
             </button>
             <button className="Btn" onClick={() => this.onClickNod()}>
-              Click to sign a metatrasanction for the dapp's <b>nod(address nodder, uint nodNum, uint nodMultiplier)</b>
+              🖐🏽 Sign a metatrasanction for <b>nod(your address, 100, 4)</b>
+              <br/>(nods[your address] = nods[your address]*4 + 100)<br/>
             </button>
           </div>
-          <p style={{ fontSize: 14, marginTop: 10 }}>
-            <span>Target Contract: {dapp_contract}</span>
+          <p className = "displayValues">
+            Current values in contract (hit refresh to update):<br></br>
+            smiles[your address]: {smiles}<br></br>
+            nods[your address]: {nods}
           </p>
+          <p className = "appendix">
+            <span>Target Contract: {dapp_contract} / deployed on Ropsten testnet</span><br></br>
+            <span>Relayer address: {relayer_address} / relayer account balance: {relayer_balance} ETH</span>
+          </p>
+          <a className = "appendix" href="https://github.com/ThomasHCHsueh/meta_tx" target="_blank">
+            Source
+          </a>
         </header>
       </div>
     );
