@@ -297,7 +297,7 @@ class App extends Component {
             </button>
           </div>
           <p className = "displayValues">
-            Current values in contract (hit refresh to update):<br></br>
+            Current values in contract (**hit refresh to show**):<br></br>
             smiles[your address]: {smiles}<br></br>
             nods[your address]: {nods}
           </p>
